@@ -348,36 +348,26 @@ void submitAPIBoardSolution(char *path, int i, int j) {
 }
 
 int main() {
-    while (1) {
+    while (true) {
+        // start timer
         time_t start_time;
         time(&start_time);
-        char* data;
-        //printf("\nBegin API call\n");
-        data = getAPIBoardData(); //don't forget to free data
-        //printf("API board data retrieved\n"); //tends to crash after this line..
+
+        // get problem, solve, submit solution
+        char* data = getAPIBoardData(); //don't forget to free data
         struct board grid = extractInfo(data);
-        //need to free data
-        
-        //printf("Raw data extracted and formatted into board struct\n");
         free(data);
-        //printGrid(&grid);
         struct point startPosition = mortalSolve(&grid);
         printf("Starting position: (%d, %d)\n", startPosition.i, startPosition.j);
-        char path[grid.step + 1];
-        path[grid.step] = '\0';
-        for (int i = 0; i < grid.step; i++) {
-            path[i] = grid.path[i];
-            printf("%c", grid.path[i]);
-        }
-        printf("\n");
-        printf("\nAbout to submit solution\n");
-        submitAPIBoardSolution(path, startPosition.i, startPosition.j);
+        grid.path[grid.step ] = '\0';
+        submitAPIBoardSolution(grid.path, startPosition.i, startPosition.j);
+
+        // solve time calc and printing
         time_t end_time;
         time(&end_time);
         int time = ((int) (end_time - start_time));
-        printf("Solve time: %d seconds\n", time);
+        printf("Solve time: %d seconds\n\n", time);
 
-        
         //need to free grid and each row within grid
         for (int i = 0; i < grid.row; i++) {
             free(grid.grid[i]);
