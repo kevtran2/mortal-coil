@@ -150,50 +150,42 @@ struct point {
 };
 
 struct point goUp(struct board *grid, int i, int j) {
-    int i2 = i;
-    int j2 = j;
-    while (i2 - 1 >= 0 && grid->grid[i2 - 1][j2] == 0) {
-        i2--;
-        grid->grid[i2][j2] = 1;
+    while (i - 1 >= 0 && grid->grid[i - 1][j] == 0) {
+        i--;
+        grid->grid[i][j] = 1;
         grid->remainingSquares -= 1;
     }
-    struct point p = {i2, j2};
+    struct point p = {i, j};
     return p;
 }
 
 struct point goDown(struct board *grid, int i, int j) {
-    int i2 = i;
-    int j2 = j;
-    while (i2 + 1 < grid->row && grid->grid[i2 + 1][j2] == 0) {
-        i2++;
-        grid->grid[i2][j2] = 1;
+    while (i + 1 < grid->row && grid->grid[i + 1][j] == 0) {
+        i++;
+        grid->grid[i][j] = 1;
         grid->remainingSquares -= 1;
     }
-    struct point p = {i2, j2};
+    struct point p = {i, j};
     return p;
 }
 
 struct point goLeft(struct board *grid, int i, int j) {
-    int i2 = i;
-    int j2 = j;
-    while (j2 - 1 >= 0 && grid->grid[i2][j2 - 1] == 0) {
-        j2--;
-        grid->grid[i2][j2] = 1;
+    while (j - 1 >= 0 && grid->grid[i][j - 1] == 0) {
+        j--;
+        grid->grid[i][j] = 1;
         grid->remainingSquares -= 1;
     }
-    struct point p = {i2, j2};
+    struct point p = {i, j};
     return p;
 }
 
 struct point goRight(struct board *grid, int i, int j) {
-    int i2 = i;
-    int j2 = j;
-    while (j2 + 1 < grid->col && grid->grid[i2][j2 + 1] == 0) {
-        j2++;
-        grid->grid[i2][j2] = 1;
+    while (j + 1 < grid->col && grid->grid[i][j + 1] == 0) {
+        j++;
+        grid->grid[i][j] = 1;
         grid->remainingSquares -= 1;
     }
-    struct point p = {i2, j2};
+    struct point p = {i, j};
     return p;
 }
 
@@ -230,13 +222,12 @@ void undoGoRight(struct board *grid, int i, int j, int i2, int j2) {
     }
 }
 
-int dfs(struct board *grid, int i, int j) {
+bool dfs(struct board *grid, int i, int j) {
     if (grid->remainingSquares == 0) {
         printf("Solved\n");
-        //printGrid(grid);
-        return 1;
+        return true;
     }
-    if (grid->step >= grid->bufmax) {
+    if (grid->step + 1 >= grid->bufmax) {
         printf("bufmax reached. Reallocating more data to path buffer...\n");
         grid->path = realloc(grid->path, grid->bufmax + 1000);
         grid->bufmax += 1000;
@@ -248,7 +239,7 @@ int dfs(struct board *grid, int i, int j) {
         grid->step += 1;
         //printf("Start going up\n");
         struct point endPoint = goUp(grid, i, j);
-        if (dfs(grid, endPoint.i, endPoint.j) == 1) return 1;
+        if (dfs(grid, endPoint.i, endPoint.j)) return true;
         grid->step -= 1;
         //printf("Undo up\n");
         undoGoUp(grid, i, j, endPoint.i, endPoint.j);
@@ -260,7 +251,7 @@ int dfs(struct board *grid, int i, int j) {
         grid->step += 1;
        // printf("Start going down\n");
         struct point endPoint = goDown(grid, i, j);
-        if (dfs(grid, endPoint.i, endPoint.j) == 1) return 1;
+        if (dfs(grid, endPoint.i, endPoint.j)) return true;
         grid->step -= 1;
        // printf("Undo down\n");
         undoGoDown(grid, i, j, endPoint.i, endPoint.j);
@@ -272,7 +263,7 @@ int dfs(struct board *grid, int i, int j) {
         grid->step += 1;
        // printf("Start going left\n");
         struct point endPoint = goLeft(grid, i, j);
-        if (dfs(grid, endPoint.i, endPoint.j) == 1) return 1;
+        if (dfs(grid, endPoint.i, endPoint.j)) return true;
         grid->step -= 1;
        // printf("Undo left\n");
         undoGoLeft(grid, i, j, endPoint.i, endPoint.j);
@@ -284,14 +275,13 @@ int dfs(struct board *grid, int i, int j) {
         grid->step += 1;
        // printf("Start going right\n");
         struct point endPoint = goRight(grid, i, j);
-        if (dfs(grid, endPoint.i, endPoint.j) == 1) return 1;
+        if (dfs(grid, endPoint.i, endPoint.j)) return true;
         grid->step -= 1;
        // printf("Undo right\n");
         undoGoRight(grid, i, j, endPoint.i, endPoint.j);
     }
-    return 0;
+    return false;
 }
-
 
 struct point mortalSolve(struct board *grid) {
     //iterate through grid, for each empty spot, call dfs
@@ -302,17 +292,15 @@ struct point mortalSolve(struct board *grid) {
             } 
         }
     }
-    //printf("Total empty squares: %d\n", grid->remainingSquares);
+
     for (int i = 0; i < grid->row; i++) {
         for (int j = 0; j < grid->col; j++) {
             if (grid->grid[i][j] == 0) { //if space is empty, then it is a valid start point
                 grid->grid[i][j] = 1;
                 grid->remainingSquares -= 1;
-                int solutionFound = dfs(grid, i, j);
+                bool solutionFound = dfs(grid, i, j);
                 struct point p = {i, j};
-                if (solutionFound == 1) {
-                    return p;
-                }
+                if (solutionFound) return p;
                 grid->grid[i][j] = 0;
                 grid->remainingSquares += 1;
             }
@@ -333,7 +321,7 @@ void submitAPIBoardSolution(char *path, int i, int j) {
 
     curl = curl_easy_init();
     if(curl) {
-        char query[1000];
+        char query[1000]; //potential bug here once path is greater than the 1000 byte buffer
         sprintf(query, "http://www.hacker.org/coil/index.php/?name=KAYTEE&password=pokemon123&path=%s&x=%d&y=%d", path, j, i);
         curl_easy_setopt(curl, CURLOPT_URL, query);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, handle_response);
